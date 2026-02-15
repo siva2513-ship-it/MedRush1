@@ -4,6 +4,7 @@ import {
   collection, 
   query, 
   where,
+  orderBy,
   Unsubscribe
 } from 'firebase/firestore';
 import { db } from './firebase';
@@ -87,6 +88,38 @@ export const listenToNursePatients = (
     },
     (error) => {
       console.error("RealtimeService: Error listening to nurse patients", error);
+    }
+  );
+};
+
+/**
+ * Listens to real-time updates for prescriptions belonging to a specific patient.
+ * @param patientId The unique ID of the patient.
+ * @param callback Function to handle the updated prescriptions list.
+ * @returns An unsubscribe function to stop listening.
+ */
+export const listenToPatientPrescriptions = (
+  patientId: string,
+  callback: (prescriptions: any[]) => void
+): Unsubscribe => {
+  const prescriptionsRef = collection(db, 'prescriptions');
+  const q = query(
+    prescriptionsRef,
+    where('patientId', '==', patientId),
+    orderBy('createdAt', 'desc')
+  );
+
+  return onSnapshot(
+    q,
+    (snapshot) => {
+      const prescriptions = snapshot.docs.map(doc => ({
+        id: doc.id,
+        ...doc.data()
+      }));
+      callback(prescriptions);
+    },
+    (error) => {
+      console.error("RealtimeService: Error listening to patient prescriptions", error);
     }
   );
 };

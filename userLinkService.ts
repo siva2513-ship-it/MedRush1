@@ -1,33 +1,32 @@
-
 import { 
   collection, 
   query, 
   where, 
   getDocs, 
-  addDoc, 
+  setDoc, 
   updateDoc, 
   arrayUnion, 
   doc,
   getDoc
 } from 'firebase/firestore';
 import { db } from './firebase';
-import { Patient, Medicine } from './types';
+import { Patient } from './types';
 
 /**
- * Finds a patient by phone number or creates a new record if not found.
+ * Finds a patient by phone number (ID) or creates a new record if not found.
+ * Uses the phone number as the document ID to prevent duplicates.
  * @param patientPhone The patient's phone number.
- * @returns The ID of the patient document.
+ * @returns The ID of the patient document (which is the phone number).
  */
 async function getOrCreatePatient(patientPhone: string): Promise<string> {
-  const patientsRef = collection(db, 'patients');
-  const q = query(patientsRef, where('phone', '==', patientPhone));
-  const querySnapshot = await getDocs(q);
+  const patientDocRef = doc(db, 'patients', patientPhone);
+  const patientSnap = await getDoc(patientDocRef);
 
-  if (!querySnapshot.empty) {
-    return querySnapshot.docs[0].id;
+  if (patientSnap.exists()) {
+    return patientPhone;
   }
 
-  // Create new patient record
+  // Create new patient record with phone as ID
   const newPatient = {
     name: 'New Patient', // Default name until updated
     phone: patientPhone,
@@ -38,8 +37,8 @@ async function getOrCreatePatient(patientPhone: string): Promise<string> {
     createdAt: new Date().toISOString()
   };
 
-  const docRef = await addDoc(patientsRef, newPatient);
-  return docRef.id;
+  await setDoc(patientDocRef, newPatient);
+  return patientPhone;
 }
 
 /**
@@ -49,8 +48,8 @@ async function getOrCreatePatient(patientPhone: string): Promise<string> {
  */
 export const linkCaretakerToPatient = async (caretakerId: string, patientPhone: string): Promise<void> => {
   try {
-    const patientId = await getOrCreatePatient(patientPhone);
-    const patientDocRef = doc(db, 'patients', patientId);
+    await getOrCreatePatient(patientPhone);
+    const patientDocRef = doc(db, 'patients', patientPhone);
     
     await updateDoc(patientDocRef, {
       caretakerIds: arrayUnion(caretakerId),
@@ -69,8 +68,8 @@ export const linkCaretakerToPatient = async (caretakerId: string, patientPhone: 
  */
 export const linkNurseToPatient = async (nurseId: string, patientPhone: string): Promise<void> => {
   try {
-    const patientId = await getOrCreatePatient(patientPhone);
-    const patientDocRef = doc(db, 'patients', patientId);
+    await getOrCreatePatient(patientPhone);
+    const patientDocRef = doc(db, 'patients', patientPhone);
     
     await updateDoc(patientDocRef, {
       nurseIds: arrayUnion(nurseId)
