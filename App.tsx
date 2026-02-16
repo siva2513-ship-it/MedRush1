@@ -1,3 +1,5 @@
+import { signInWithPhoneNumber } from "firebase/auth";
+import { setupRecaptcha } from "./firebase";
 import React, { useState } from 'react';
 import { Language, Role, User, Medicine, Patient as PatientType, Translation } from './types';
 import { TRANSLATIONS } from './constants';
@@ -20,6 +22,8 @@ const App: React.FC = () => {
   const [medicines, setMedicines] = useState<Medicine[]>([]);
   const [patients, setPatients] = useState<PatientType[]>([]);
   const [otp, setOtp] = useState('');
+  const [confirmationResult, setConfirmationResult] = useState<any>(null);
+  const [recaptcha, setRecaptcha] = useState<any>(null);
   const [formData, setFormData] = useState({ name: '', phone: '', hospital: '', relation: '', patientPhone: '' });
 
   const t = TRANSLATIONS[language];
@@ -71,6 +75,12 @@ const App: React.FC = () => {
     if (!role) return;
 
     try {
+        if (!confirmationResult) {
+        alert("Please send OTP first");
+        return;
+      }
+
+      await confirmationResult.confirm(otp);
 
       // 🔹 Hackathon limit check
       const snapshot = await getDocs(collection(db, "users"));
@@ -378,6 +388,53 @@ const App: React.FC = () => {
               className="w-full p-4 rounded-xl border border-gray-200 focus:ring-2 focus:ring-blue-500 outline-none" 
             />
           </div>
+          <button
+            type="button"
+            onClick={async () => {
+              try {
+                onClick={async () => {
+                  try {
+
+                  let verifier = recaptcha;
+
+                  if (!verifier) {
+                    verifier = setupRecaptcha("recaptcha-container");
+                    setRecaptcha(verifier);
+                  }
+
+                  const result = await signInWithPhoneNumber(
+                  auth,
+                  "+91" + formData.phone,
+                  verifier
+                );
+
+                setConfirmationResult(result);
+                alert("OTP Sent");
+
+                } catch (err) {
+                  alert("OTP Failed");
+                }
+            }}
+
+
+                const result = await signInWithPhoneNumber(
+                  auth,
+                  "+91" + formData.phone,
+                  recaptcha
+                );
+
+                setConfirmationResult(result);
+                alert("OTP Sent");
+
+              } catch (err) {
+                alert("OTP Failed");
+              }
+            }}
+            className="w-full py-3 bg-gray-100 rounded-xl font-bold"
+          >
+            Send OTP
+          </button>
+
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">{t.otp}</label>
             <input 
@@ -390,6 +447,7 @@ const App: React.FC = () => {
               className="w-full p-4 rounded-xl border border-gray-200 focus:ring-2 focus:ring-blue-500 outline-none font-mono text-center text-xl tracking-widest" 
             />
           </div>
+          <div id="recaptcha-container"></div>
           <button type="submit" className="w-full py-4 bg-blue-600 text-white rounded-xl font-bold shadow-lg hover:bg-blue-700 transition-all mt-4">
             {t.verify}
           </button>
