@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Language, Role, User, Medicine, Patient as PatientType, Translation } from './types';
 import { TRANSLATIONS } from './constants';
@@ -70,6 +69,157 @@ const App: React.FC = () => {
       role: role!
     });
     setStep('dashboard');
+  };
+
+  const renderMedicineItem = (med: Medicine, idx: number) => (
+    <div key={idx} className="bg-white p-5 rounded-2xl shadow-sm border border-gray-100 flex items-center justify-between group hover:border-blue-200 transition-all">
+      <div className="flex items-center space-x-4">
+        <div className="w-12 h-12 bg-blue-50 text-blue-500 rounded-xl flex items-center justify-center font-bold text-xl">
+          {med.name.charAt(0)}
+        </div>
+        <div>
+          <h4 className="font-bold text-gray-800">{med.name}</h4>
+          <p className="text-sm text-gray-500">{med.dosage} • {med.frequency}</p>
+          <p className="text-xs text-blue-600 mt-1 font-semibold">🕒 {med.time}</p>
+        </div>
+      </div>
+      <div className="text-right">
+        <span className={`px-4 py-1.5 rounded-full text-[10px] font-black uppercase tracking-wider ${
+          med.status === 'taken' ? 'bg-green-100 text-green-700' : 
+          med.status === 'missed' ? 'bg-red-100 text-red-700' : 'bg-orange-100 text-orange-700'
+        }`}>
+          {t[med.status as keyof Translation] || med.status}
+        </span>
+      </div>
+    </div>
+  );
+
+  const renderPatientDashboard = () => {
+    const morningMeds = medicines.filter(m => /morning|breakfast|am|day/i.test(m.time.toLowerCase()));
+    const afternoonMeds = medicines.filter(m => /afternoon|lunch|noon/i.test(m.time.toLowerCase()));
+    const eveningMeds = medicines.filter(m => /evening|dinner|night|pm/i.test(m.time.toLowerCase()));
+    const otherMeds = medicines.filter(m => 
+      !morningMeds.includes(m) && 
+      !afternoonMeds.includes(m) && 
+      !eveningMeds.includes(m)
+    );
+
+    return (
+      <div className="max-w-2xl mx-auto p-4 space-y-6 pb-24">
+        <div className="bg-white p-6 rounded-3xl shadow-sm border border-gray-100">
+          <h2 className="text-xl font-bold mb-4">{t.uploadPrescription}</h2>
+          <div className="relative group">
+            <input 
+              type="file" 
+              accept="image/*" 
+              capture="environment" 
+              onChange={handleFileUpload}
+              className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
+            />
+            <div className="border-2 border-dashed border-gray-200 rounded-2xl p-10 flex flex-col items-center justify-center group-hover:border-blue-400 transition-all bg-gray-50/50">
+              <div className="w-16 h-16 bg-blue-50 text-blue-600 rounded-full flex items-center justify-center mb-4">
+                <svg className="w-8 h-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" />
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" />
+                </svg>
+              </div>
+              <p className="text-gray-500 font-medium">Scan Prescription Now</p>
+            </div>
+          </div>
+        </div>
+
+        {loading && (
+          <div className="bg-blue-50 p-8 rounded-3xl flex flex-col items-center space-y-4 animate-pulse border border-blue-100">
+            <div className="w-12 h-12 border-4 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
+            <span className="text-blue-700 font-bold">{t.scanning}</span>
+          </div>
+        )}
+
+        {summary && (
+          <div className="bg-white p-6 rounded-3xl shadow-sm border-2 border-emerald-100 space-y-4">
+            <div className="flex items-center space-x-2">
+              <span className="text-2xl">📝</span>
+              <h3 className="text-emerald-800 font-bold text-lg">{t.summaryTitle}</h3>
+            </div>
+            
+            <div className="bg-emerald-50/50 p-5 rounded-2xl border border-emerald-50">
+               <p className="text-emerald-800 text-lg leading-relaxed italic">"{summary}"</p>
+            </div>
+
+            <div className="flex flex-col space-y-3 pt-2">
+              <button 
+                onClick={() => speakText(summary, language)}
+                className="flex items-center justify-center space-x-3 py-4 bg-emerald-600 text-white rounded-2xl font-bold shadow-md hover:bg-emerald-700 transition-colors"
+              >
+                <span>🔊</span>
+                <span>{t.readAloud}</span>
+              </button>
+              <button 
+                onClick={() => triggerAiCall(user?.name || 'Patient')}
+                className="flex items-center justify-center space-x-3 py-4 bg-blue-600 text-white rounded-2xl font-bold shadow-md hover:bg-blue-700 transition-colors"
+              >
+                <span>📞</span>
+                <span>{t.callReminder}</span>
+              </button>
+            </div>
+          </div>
+        )}
+
+        {medicines.length > 0 && (
+          <div className="space-y-8">
+            {/* Morning Section */}
+            <div className="space-y-3">
+              <div className="flex items-center space-x-2 pl-2">
+                <span className="text-xl">☀️</span>
+                <h3 className="text-sm font-bold text-gray-500 uppercase tracking-widest">{t.morning}</h3>
+              </div>
+              {morningMeds.length > 0 ? (
+                morningMeds.map((med, idx) => renderMedicineItem(med, idx))
+              ) : (
+                <p className="text-xs text-gray-400 italic pl-2">No medicines scheduled</p>
+              )}
+            </div>
+
+            {/* Afternoon Section */}
+            <div className="space-y-3">
+              <div className="flex items-center space-x-2 pl-2">
+                <span className="text-xl">🌤️</span>
+                <h3 className="text-sm font-bold text-gray-500 uppercase tracking-widest">{t.afternoon}</h3>
+              </div>
+              {afternoonMeds.length > 0 ? (
+                afternoonMeds.map((med, idx) => renderMedicineItem(med, idx))
+              ) : (
+                <p className="text-xs text-gray-400 italic pl-2">No medicines scheduled</p>
+              )}
+            </div>
+
+            {/* Evening Section */}
+            <div className="space-y-3">
+              <div className="flex items-center space-x-2 pl-2">
+                <span className="text-xl">🌙</span>
+                <h3 className="text-sm font-bold text-gray-500 uppercase tracking-widest">{t.evening}</h3>
+              </div>
+              {eveningMeds.length > 0 ? (
+                eveningMeds.map((med, idx) => renderMedicineItem(med, idx))
+              ) : (
+                <p className="text-xs text-gray-400 italic pl-2">No medicines scheduled</p>
+              )}
+            </div>
+
+            {/* Others Section */}
+            {otherMeds.length > 0 && (
+              <div className="space-y-3">
+                <div className="flex items-center space-x-2 pl-2">
+                  <span className="text-xl">📅</span>
+                  <h3 className="text-sm font-bold text-gray-500 uppercase tracking-widest">{t.others}</h3>
+                </div>
+                {otherMeds.map((med, idx) => renderMedicineItem(med, idx))}
+              </div>
+            )}
+          </div>
+        )}
+      </div>
+    );
   };
 
   const renderOnboarding = () => (
@@ -216,97 +366,6 @@ const App: React.FC = () => {
           </button>
         </form>
       </div>
-    </div>
-  );
-
-  const renderPatientDashboard = () => (
-    <div className="max-w-2xl mx-auto p-4 space-y-6 pb-24">
-      <div className="bg-white p-6 rounded-3xl shadow-sm border border-gray-100">
-        <h2 className="text-xl font-bold mb-4">{t.uploadPrescription}</h2>
-        <div className="relative group">
-          <input 
-            type="file" 
-            accept="image/*" 
-            capture="environment" 
-            onChange={handleFileUpload}
-            className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
-          />
-          <div className="border-2 border-dashed border-gray-200 rounded-2xl p-10 flex flex-col items-center justify-center group-hover:border-blue-400 transition-all bg-gray-50/50">
-            <div className="w-16 h-16 bg-blue-50 text-blue-600 rounded-full flex items-center justify-center mb-4">
-              <svg className="w-8 h-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" />
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" />
-              </svg>
-            </div>
-            <p className="text-gray-500 font-medium">Scan Prescription Now</p>
-          </div>
-        </div>
-      </div>
-
-      {loading && (
-        <div className="bg-blue-50 p-8 rounded-3xl flex flex-col items-center space-y-4 animate-pulse border border-blue-100">
-          <div className="w-12 h-12 border-4 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
-          <span className="text-blue-700 font-bold">{t.scanning}</span>
-        </div>
-      )}
-
-      {summary && (
-        <div className="bg-white p-6 rounded-3xl shadow-sm border-2 border-emerald-100 space-y-4">
-          <div className="flex items-center space-x-2">
-            <span className="text-2xl">📝</span>
-            <h3 className="text-emerald-800 font-bold text-lg">{t.summaryTitle}</h3>
-          </div>
-          
-          <div className="bg-emerald-50/50 p-5 rounded-2xl border border-emerald-50">
-             <p className="text-emerald-800 text-lg leading-relaxed italic">"{summary}"</p>
-          </div>
-
-          <div className="flex flex-col space-y-3 pt-2">
-            <button 
-              onClick={() => speakText(summary, language)}
-              className="flex items-center justify-center space-x-3 py-4 bg-emerald-600 text-white rounded-2xl font-bold shadow-md hover:bg-emerald-700 transition-colors"
-            >
-              <span>🔊</span>
-              <span>{t.readAloud}</span>
-            </button>
-            <button 
-              onClick={() => triggerAiCall(user?.name || 'Patient')}
-              className="flex items-center justify-center space-x-3 py-4 bg-blue-600 text-white rounded-2xl font-bold shadow-md hover:bg-blue-700 transition-colors"
-            >
-              <span>📞</span>
-              <span>{t.callReminder}</span>
-            </button>
-          </div>
-        </div>
-      )}
-
-      {medicines.length > 0 && (
-        <div className="space-y-4">
-          <h3 className="text-sm font-bold text-gray-400 uppercase tracking-widest pl-2">Medicines List</h3>
-          {medicines.map((med, idx) => (
-            <div key={idx} className="bg-white p-5 rounded-2xl shadow-sm border border-gray-100 flex items-center justify-between group hover:border-blue-200 transition-all">
-              <div className="flex items-center space-x-4">
-                <div className="w-12 h-12 bg-blue-50 text-blue-500 rounded-xl flex items-center justify-center font-bold text-xl">
-                  {med.name.charAt(0)}
-                </div>
-                <div>
-                  <h4 className="font-bold text-gray-800">{med.name}</h4>
-                  <p className="text-sm text-gray-500">{med.dosage} • {med.frequency}</p>
-                  <p className="text-xs text-blue-600 mt-1 font-semibold">🕒 {med.time}</p>
-                </div>
-              </div>
-              <div className="text-right">
-                <span className={`px-4 py-1.5 rounded-full text-[10px] font-black uppercase tracking-wider ${
-                  med.status === 'taken' ? 'bg-green-100 text-green-700' : 
-                  med.status === 'missed' ? 'bg-red-100 text-red-700' : 'bg-orange-100 text-orange-700'
-                }`}>
-                  {t[med.status as keyof Translation] || med.status}
-                </span>
-              </div>
-            </div>
-          ))}
-        </div>
-      )}
     </div>
   );
 

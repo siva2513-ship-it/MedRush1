@@ -1,4 +1,3 @@
-
 import { Language, Translation } from './types';
 
 export const TRANSLATIONS: Record<Language, Translation> = {
@@ -30,7 +29,11 @@ export const TRANSLATIONS: Record<Language, Translation> = {
     taken: 'Taken',
     pending: 'Pending',
     summaryTitle: 'Prescription Summary',
-    noCaretakerAlert: '🚨 Patient has no caretaker! Nurse Alert Triggered.'
+    noCaretakerAlert: '🚨 Patient has no caretaker! Nurse Alert Triggered.',
+    morning: 'Morning',
+    afternoon: 'Afternoon',
+    evening: 'Evening',
+    others: 'Others'
   },
   [Language.TELUGU]: {
     appName: 'మెడ్రష్',
@@ -60,7 +63,11 @@ export const TRANSLATIONS: Record<Language, Translation> = {
     taken: 'తీసుకున్నారు',
     pending: 'వేచి ఉంది',
     summaryTitle: 'ప్రిస్క్రిప్షన్ సారాంశం',
-    noCaretakerAlert: '🚨 రోగికి సంరక్షకుడు లేరు! నర్స్ అలర్ట్ ప్రారంభమైంది.'
+    noCaretakerAlert: '🚨 రోగికి సంరక్షకుడు లేరు! నర్స్ అలర్ట్ ప్రారంభమైంది.',
+    morning: 'ఉదయం',
+    afternoon: 'మధ్యాహ్నం',
+    evening: 'సాయంత్రం',
+    others: 'ఇతర'
   },
   [Language.HINDI]: {
     appName: 'मेडरश',
@@ -90,6 +97,10 @@ export const TRANSLATIONS: Record<Language, Translation> = {
     taken: 'ले लिया',
     pending: 'लंबित',
     summaryTitle: 'नुस्खा सारांश',
-    noCaretakerAlert: '🚨 मरीज का कोई देखभाल करने वाला नहीं है! नर्स अलर्ट जारी।'
+    noCaretakerAlert: '🚨 मरीज का कोई देखभाल करने वाला नहीं है! नर्स अलर्ट जारी।',
+    morning: 'सुबह',
+    afternoon: 'दोपहर',
+    evening: 'शाम',
+    others: 'अन्य'
   }
 };

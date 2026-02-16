@@ -3,10 +3,11 @@
  * Integrates external AI services for OCR, Text-to-Speech, and Automated Voice Calls.
  */
 
-const AFFINDO_API_KEY = import.meta.env.VITE_AFFINDO_API_KEY;
-const SARVAM_API_KEY = import.meta.env.VITE_SARVAM_API_KEY;
-const VAPI_API_KEY = import.meta.env.VITE_VAPI_API_KEY;
-const VAPI_ASSISTANT_ID = import.meta.env.VITE_VAPI_ASSISTANT_ID;
+// Fix: Replace import.meta.env with process.env as ImportMeta.env is not supported in this environment
+const AFFINDO_API_KEY = process.env.VITE_AFFINDO_API_KEY;
+const SARVAM_API_KEY = process.env.VITE_SARVAM_API_KEY;
+const VAPI_API_KEY = process.env.VITE_VAPI_API_KEY;
+const VAPI_ASSISTANT_ID = process.env.VITE_VAPI_ASSISTANT_ID;
 
 
 /**

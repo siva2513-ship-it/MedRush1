@@ -1,4 +1,3 @@
-
 export enum Language {
   ENGLISH = 'en',
   TELUGU = 'te',
@@ -64,4 +63,8 @@ export interface Translation {
   pending: string;
   summaryTitle: string;
   noCaretakerAlert: string;
+  morning: string;
+  afternoon: string;
+  evening: string;
+  others: string;
 }
