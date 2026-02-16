@@ -6,8 +6,11 @@ import { analyzePrescription } from './services/geminiService';
 import { speakText } from './services/speechService';
 // Import firebase services for future use
 import { auth, db, storage } from './firebase';
+import { doc, setDoc, collection, getDocs } from "firebase/firestore";
+
 
 const App: React.FC = () => {
+  const MAX_USERS = 4;
   const [step, setStep] = useState<'onboarding' | 'language' | 'role' | 'login' | 'dashboard' | 'settings'>('onboarding');
   const [language, setLanguage] = useState<Language>(Language.ENGLISH);
   const [role, setRole] = useState<Role | null>(null);
@@ -47,6 +50,12 @@ const App: React.FC = () => {
         const result = await analyzePrescription(base64, language);
         setMedicines(result.medicines);
         setSummary(result.summary);
+        await setDoc(doc(db, "prescriptions", user?.phone || "unknown"), {
+          medicines: result.medicines,
+          summary: result.summary,
+          createdAt: new Date()
+        });
+
       } catch (err) {
         alert("Failed to analyze prescription. Please try again.");
       } finally {
@@ -56,20 +65,39 @@ const App: React.FC = () => {
     reader.readAsDataURL(file);
   };
 
-  const handleLogin = (e: React.FormEvent) => {
+  const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (otp !== '123456') {
-      alert("Verification failed. Please use dummy OTP: 123456");
-      return;
+
+    if (!role) return;
+
+    try {
+
+      // 🔹 Hackathon limit check
+      const snapshot = await getDocs(collection(db, "users"));
+      if (snapshot.size >= MAX_USERS) {
+        alert("Hackathon demo supports only 4 users");
+        return;
+      }
+
+      const userData = {
+        name: formData.name,
+        phone: formData.phone,
+        hospitalName: formData.hospital || "",
+        role: role,
+        language: language,
+        createdAt: new Date()
+      };
+
+      await setDoc(doc(db, "users", formData.phone), userData);
+
+      setUser(userData);
+      setStep('dashboard');
+
+    } catch (err) {
+      alert("Login failed");
     }
-    setUser({
-      name: formData.name,
-      phone: formData.phone,
-      hospitalName: formData.hospital,
-      role: role!
-    });
-    setStep('dashboard');
   };
+
 
   const renderMedicineItem = (med: Medicine, idx: number) => (
     <div key={idx} className="bg-white p-5 rounded-2xl shadow-sm border border-gray-100 flex items-center justify-between group hover:border-blue-200 transition-all">
@@ -143,6 +171,7 @@ const App: React.FC = () => {
             </div>
             
             <div className="bg-emerald-50/50 p-5 rounded-2xl border border-emerald-50">
+              
                <p className="text-emerald-800 text-lg leading-relaxed italic">"{summary}"</p>
             </div>
 
@@ -389,24 +418,23 @@ const App: React.FC = () => {
             className="w-full p-4 bg-gray-50 rounded-xl border-none outline-none focus:ring-2 focus:ring-blue-500"
           />
           <button 
-            onClick={() => {
-              if (!formData.relation || !formData.patientPhone) return;
-              setPatients([{
-                id: Math.random().toString(),
-                name: 'Anjali Sharma',
-                phone: formData.patientPhone,
-                relation: formData.relation,
-                medicines: [
-                  { name: 'Metformin', dosage: '500mg', frequency: 'Daily', time: 'After Breakfast', status: 'missed' }
-                ],
-                hasCaretaker: true
-              }]);
-              setFormData({...formData, relation: '', patientPhone: ''});
-            }}
-            className="w-full py-4 bg-blue-600 text-white rounded-xl font-bold hover:bg-blue-700 transition-colors"
-          >
-            {t.add}
-          </button>
+            onClick={async () => {
+            if (!formData.relation || !formData.patientPhone) return;
+
+            await setDoc(doc(db, "links", formData.patientPhone), {
+              caretakerPhone: user?.phone,
+              relation: formData.relation
+            });
+
+            alert("Patient Linked Successfully");
+
+            setFormData({...formData, relation: '', patientPhone: ''});
+          }}
+          className="w-full py-4 bg-blue-600 text-white rounded-xl font-bold hover:bg-blue-700 transition-colors"
+        >
+          {t.add}
+        </button>
+
         </div>
       </div>
 
@@ -464,15 +492,19 @@ const App: React.FC = () => {
             <p className="text-sm text-gray-500 font-medium">Ward 4B • {patients.length} Patients</p>
           </div>
           <button 
-            onClick={() => {
-              setPatients([...patients, {
-                id: Date.now().toString(),
-                name: 'New Patient',
-                phone: '9988776655',
-                medicines: [],
+            onClick={async () => {
+              const phone = prompt("Enter patient phone number");
+              if (!phone) return;
+
+              await setDoc(doc(db, "patients", phone), {
+                phone,
+                addedBy: user?.phone,
                 hasCaretaker: false
-              }]);
+              });
+
+              alert("Patient Added");
             }}
+
             className="w-14 h-14 bg-blue-600 text-white rounded-2xl flex items-center justify-center text-3xl font-bold shadow-lg shadow-blue-200 active:scale-95 transition-transform"
           >
             +
