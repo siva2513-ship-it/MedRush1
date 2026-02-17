@@ -26,10 +26,15 @@ const App: React.FC = () => {
     if (callState === 'active') {
       intervalRef.current = window.setInterval(() => setTimer(prev => prev + 1), 1000);
     } else {
-      if (intervalRef.current) clearInterval(intervalRef.current);
+      if (intervalRef.current) {
+        window.clearInterval(intervalRef.current);
+        intervalRef.current = null;
+      }
       setTimer(0);
     }
-    return () => { if (intervalRef.current) clearInterval(intervalRef.current); };
+    return () => {
+      if (intervalRef.current) window.clearInterval(intervalRef.current);
+    };
   }, [callState]);
 
   const handleScan = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -37,29 +42,47 @@ const App: React.FC = () => {
     if (!file) return;
 
     setLoading(true);
+    setPreview(null);
+    setSummary('');
+    setMedicines([]);
+
     const reader = new FileReader();
     reader.onload = async () => {
       const dataUrl = reader.result as string;
       setPreview(dataUrl);
       try {
-        const result = await analyzePrescription(dataUrl.split(',')[1], language);
+        const base64Data = dataUrl.split(',')[1];
+        const result = await analyzePrescription(base64Data, language);
         setMedicines(result.medicines);
         setSummary(result.summary);
-        setTimeout(() => setCallState('incoming'), 1500);
+        // Delay the "incoming call" for a natural feeling after scanning
+        setTimeout(() => setCallState('incoming'), 1200);
       } catch (err) {
-        alert("Extraction failed. Please try a clearer image.");
+        console.error("Analysis Error:", err);
+        alert("OCR failed. Please ensure the prescription is well-lit and clearly legible.");
       } finally {
         setLoading(false);
       }
+    };
+    reader.onerror = () => {
+      alert("Failed to read image file.");
+      setLoading(false);
     };
     reader.readAsDataURL(file);
   };
 
   const handleLogin = (e: React.FormEvent) => {
     e.preventDefault();
-    if (formData.otp !== '123456') return alert("Verification Failed. Use 123456");
-    setUser({ name: formData.name, phone: formData.phone, role: role! });
-    setStep('dashboard');
+    if (!formData.name || !formData.phone) return alert("Please fill all fields");
+    // Standard dummy OTP for this environment
+    if (formData.otp !== '123456' && formData.otp !== '') return alert("Verification Failed. Use 123456");
+    
+    if (role) {
+      setUser({ name: formData.name, phone: formData.phone, role: role });
+      setStep('dashboard');
+    } else {
+      setStep('role');
+    }
   };
 
   const renderBadge = (status: string) => {
@@ -68,9 +91,10 @@ const App: React.FC = () => {
       taken: 'bg-emerald-100 text-emerald-700 border-emerald-200',
       missed: 'bg-rose-100 text-rose-700 border-rose-200'
     };
+    const label = t[status as keyof typeof t] || status;
     return (
       <span className={`px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-widest border ${styles[status as keyof typeof styles]}`}>
-        {t[status as keyof typeof t] || status}
+        {label}
       </span>
     );
   };
@@ -127,10 +151,17 @@ const App: React.FC = () => {
       <div className="glass-card p-8 rounded-[2.5rem] relative overflow-hidden group">
         <h2 className="text-2xl font-black mb-6 text-slate-800">{t.uploadPrescription}</h2>
         <div className="relative h-64 rounded-[2rem] border-4 border-dashed border-slate-100 bg-slate-50/50 flex flex-col items-center justify-center hover:border-blue-200 transition-all cursor-pointer">
-          <input type="file" accept="image/*" capture="environment" onChange={handleScan} className="absolute inset-0 opacity-0 cursor-pointer z-20" disabled={loading} />
+          <input 
+            type="file" 
+            accept="image/*" 
+            capture="environment" 
+            onChange={handleScan} 
+            className="absolute inset-0 opacity-0 cursor-pointer z-20" 
+            disabled={loading} 
+          />
           {preview ? (
             <div className="absolute inset-0 z-10 p-2">
-              <img src={preview} className={`w-full h-full object-cover rounded-[1.5rem] shadow-lg ${loading ? 'opacity-40 grayscale blur-sm' : ''}`} />
+              <img src={preview} alt="Preview" className={`w-full h-full object-cover rounded-[1.5rem] shadow-lg ${loading ? 'opacity-40 grayscale blur-sm' : ''}`} />
               {loading && <div className="scanner-line" />}
             </div>
           ) : (
@@ -140,7 +171,12 @@ const App: React.FC = () => {
               <p className="text-sm text-slate-300 font-bold mt-1 tracking-tight">AI will auto-extract dosages</p>
             </div>
           )}
-          {loading && <div className="absolute z-30 font-black text-sm uppercase tracking-widest text-blue-700 animate-pulse bg-white/80 px-4 py-2 rounded-full shadow-lg">{t.scanning}</div>}
+          {loading && (
+            <div className="absolute z-30 flex flex-col items-center space-y-4">
+               <div className="w-12 h-12 border-4 border-blue-600 border-t-transparent rounded-full animate-spin"></div>
+               <div className="font-black text-sm uppercase tracking-widest text-blue-700 animate-pulse bg-white/90 px-6 py-2 rounded-full shadow-lg">{t.scanning}</div>
+            </div>
+          )}
         </div>
       </div>
 
@@ -152,10 +188,16 @@ const App: React.FC = () => {
           </div>
           <p className="text-emerald-800 font-semibold italic text-xl leading-relaxed">"{summary}"</p>
           <div className="grid grid-cols-2 gap-4">
-            <button onClick={() => speakText(summary, language)} className="flex items-center justify-center space-x-2 py-4 bg-emerald-600 text-white rounded-[1.5rem] font-black shadow-lg shadow-emerald-600/20 hover:brightness-110 active:scale-95 transition-all">
+            <button 
+              onClick={() => speakText(summary, language)} 
+              className="flex items-center justify-center space-x-2 py-4 bg-emerald-600 text-white rounded-[1.5rem] font-black shadow-lg shadow-emerald-600/20 hover:brightness-110 active:scale-95 transition-all"
+            >
               <span>🔊</span> <span>{t.readAloud}</span>
             </button>
-            <button onClick={() => setCallState('incoming')} className="flex items-center justify-center space-x-2 py-4 bg-blue-600 text-white rounded-[1.5rem] font-black shadow-lg shadow-blue-600/20 hover:brightness-110 active:scale-95 transition-all">
+            <button 
+              onClick={() => setCallState('incoming')} 
+              className="flex items-center justify-center space-x-2 py-4 bg-blue-600 text-white rounded-[1.5rem] font-black shadow-lg shadow-blue-600/20 hover:brightness-110 active:scale-95 transition-all"
+            >
               <span>📞</span> <span>AI Call</span>
             </button>
           </div>
@@ -320,7 +362,7 @@ const App: React.FC = () => {
             </div>
             <div className="pt-8 space-y-4">
               <button onClick={() => setStep('language')} className="w-full py-5 bg-slate-50 rounded-[1.5rem] font-black text-slate-600 hover:bg-slate-100 transition-colors">Change Preference</button>
-              <button onClick={() => setUser(null) || setStep('onboarding')} className="w-full py-5 bg-rose-50 text-rose-600 rounded-[1.5rem] font-black hover:bg-rose-100 transition-colors">Sign Out</button>
+              <button onClick={() => {setUser(null); setStep('onboarding');}} className="w-full py-5 bg-rose-50 text-rose-600 rounded-[1.5rem] font-black hover:bg-rose-100 transition-colors">Sign Out</button>
             </div>
           </div>
         )}
@@ -344,7 +386,7 @@ const App: React.FC = () => {
                 <p className="mt-3 text-blue-500/60 font-black uppercase tracking-[0.4em] text-xs">Secure Healthcare Line</p>
                 <div className="flex space-x-2 mt-12 items-end h-16">
                   {[...Array(12)].map((_, i) => (
-                    <div key={i} className="w-2 bg-blue-500 rounded-full animate-pulse" style={{ height: `${Math.random() * 100}%`, animationDelay: `${i * 0.1}s`, opacity: 0.5 + Math.random() * 0.5 }} />
+                    <div key={i} className="w-2 bg-blue-500 rounded-full animate-pulse" style={{ height: `${20 + Math.random() * 80}%`, animationDelay: `${i * 0.1}s`, opacity: 0.5 + Math.random() * 0.5 }} />
                   ))}
                 </div>
               </div>
@@ -356,10 +398,20 @@ const App: React.FC = () => {
                 <button onClick={() => setCallState('idle')} className="flex-1 py-7 bg-rose-500 rounded-[2.5rem] flex justify-center shadow-2xl active:scale-90 transition-all">
                   <svg className="w-10 h-10 rotate-[135deg] text-white" fill="currentColor" viewBox="0 0 20 20"><path d="M2 3a1 1 0 011-1h2.153a1 1 0 01.986.836l.74 4.435a1 1 0 01-.54 1.06l-1.548.773a11.037 11.037 0 005.505 5.505l.774-1.548a1 1 0 011.059-.54l4.435.74a1 1 0 01.836.986V17a1 1 0 01-1 1h-2C7.82 18 2 12.18 2 5V3z" /></svg>
                 </button>
-                <button onClick={async () => {
-                  setCallState('active');
-                  if (summary) await playAiVoice(summary, () => setTimeout(() => setCallState('idle'), 3000));
-                }} className="flex-1 py-7 bg-emerald-500 rounded-[2.5rem] flex justify-center shadow-2xl active:scale-90 transition-all animate-pulse">
+                <button 
+                  onClick={async () => {
+                    setCallState('active');
+                    if (summary) {
+                      await playAiVoice(summary, () => {
+                        // Keep call active for a moment after finishing speech
+                        setTimeout(() => setCallState('idle'), 3000);
+                      });
+                    } else {
+                      setTimeout(() => setCallState('idle'), 3000);
+                    }
+                  }} 
+                  className="flex-1 py-7 bg-emerald-500 rounded-[2.5rem] flex justify-center shadow-2xl active:scale-90 transition-all animate-pulse"
+                >
                   <svg className="w-10 h-10 text-white" fill="currentColor" viewBox="0 0 20 20"><path d="M2 3a1 1 0 011-1h2.153a1 1 0 01.986.836l.74 4.435a1 1 0 01-.54 1.06l-1.548.773a11.037 11.037 0 005.505 5.505l.774-1.548a1 1 0 011.059-.54l4.435.74a1 1 0 01.836.986V17a1 1 0 01-1 1h-2C7.82 18 2 12.18 2 5V3z" /></svg>
                 </button>
               </>

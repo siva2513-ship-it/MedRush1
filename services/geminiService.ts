@@ -1,23 +1,24 @@
+
 import { GoogleGenAI, Type, Modality } from "@google/genai";
 import { Medicine } from "../types";
 
-const getClient = () => new GoogleGenAI({ apiKey: process.env.API_KEY });
-
-const decodeBase64 = (base64: string) => {
+// Standard decoding as per guidelines
+function decode(base64: string) {
   const binaryString = atob(base64);
-  const bytes = new Uint8Array(binaryString.length);
-  for (let i = 0; i < binaryString.length; i++) {
+  const len = binaryString.length;
+  const bytes = new Uint8Array(len);
+  for (let i = 0; i < len; i++) {
     bytes[i] = binaryString.charCodeAt(i);
   }
   return bytes;
-};
+}
 
-const decodeAudioData = async (
+async function decodeAudioData(
   data: Uint8Array,
   ctx: AudioContext,
   sampleRate: number,
   numChannels: number,
-): Promise<AudioBuffer> => {
+): Promise<AudioBuffer> {
   const dataInt16 = new Int16Array(data.buffer);
   const frameCount = dataInt16.length / numChannels;
   const buffer = ctx.createBuffer(numChannels, frameCount, sampleRate);
@@ -28,14 +29,17 @@ const decodeAudioData = async (
     }
   }
   return buffer;
-};
+}
+
+const getClient = () => new GoogleGenAI({ apiKey: process.env.API_KEY });
 
 export const analyzePrescription = async (base64: string, language: string) => {
   const ai = getClient();
-  const prompt = `Act as a senior pharmacist. Extract medication details from the prescription image.
-  Identify: name, dosage, frequency, and time (Morning, Afternoon, Evening, Bedtime).
-  Provide a professional but empathetic one-sentence summary in ${language === 'te' ? 'Telugu' : language === 'hi' ? 'Hindi' : 'English'}.
-  Return valid JSON.`;
+  const prompt = `Act as a senior medical pharmacist. Analyze this prescription image.
+  Extract ALL medications with these details: name, dosage (e.g. 500mg), frequency (e.g. twice daily), and specific time of day (Morning, Afternoon, Evening, Night).
+  Also provide a warm, helpful summary of the treatment plan in ${language === 'te' ? 'Telugu' : language === 'hi' ? 'Hindi' : 'English'}.
+  Ensure the summary is easy to understand for an elderly person.
+  Return results in JSON format.`;
 
   try {
     const response = await ai.models.generateContent({
@@ -73,11 +77,14 @@ export const analyzePrescription = async (base64: string, language: string) => {
 
     const data = JSON.parse(response.text || "{}");
     return {
-      medicines: (data.medicines || []).map((m: any) => ({ ...m, status: 'pending' })),
+      medicines: (data.medicines || []).map((m: any) => ({ 
+        ...m, 
+        status: 'pending' 
+      })),
       summary: data.summary || ""
     };
   } catch (error) {
-    console.error("OCR Analysis failed:", error);
+    console.error("Prescription Analysis failed:", error);
     throw error;
   }
 };
@@ -97,18 +104,26 @@ export const playAiVoice = async (text: string, onEnded?: () => void) => {
     });
 
     const audioBase64 = response.candidates?.[0]?.content?.parts?.[0]?.inlineData?.data;
-    if (!audioBase64) return;
+    if (!audioBase64) {
+      if (onEnded) onEnded();
+      return;
+    }
 
     const audioCtx = new (window.AudioContext || (window as any).webkitAudioContext)({ sampleRate: 24000 });
-    const decoded = decodeBase64(audioBase64);
+    const decoded = decode(audioBase64);
     const buffer = await decodeAudioData(decoded, audioCtx, 24000, 1);
     const source = audioCtx.createBufferSource();
     source.buffer = buffer;
     source.connect(audioCtx.destination);
-    if (onEnded) source.onended = onEnded;
+    
+    if (onEnded) {
+      source.addEventListener('ended', onEnded);
+    }
+    
     source.start();
     return source;
   } catch (error) {
     console.error("TTS failed:", error);
+    if (onEnded) onEnded();
   }
 };
