@@ -1,0 +1,57 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer utilities {
+  .medical-gradient {
+    background: radial-gradient(circle at 0% 0%, #f0f9ff 0%, transparent 50%),
+                radial-gradient(circle at 100% 100%, #f0fdf4 0%, transparent 50%),
+                #f8fafc;
+  }
+  
+  .glass-card {
+    @apply bg-white/70 backdrop-blur-xl border border-white shadow-xl shadow-slate-200/50;
+  }
+
+  .scanner-line {
+    @apply absolute w-full h-1 bg-gradient-to-r from-transparent via-blue-500 to-transparent z-20;
+    box-shadow: 0 0 20px 5px rgba(59, 130, 246, 0.5);
+    animation: scan-loop 2s ease-in-out infinite;
+  }
+}
+
+@keyframes scan-loop {
+  0% { top: 0%; opacity: 0; }
+  10% { opacity: 1; }
+  90% { opacity: 1; }
+  100% { top: 100%; opacity: 0; }
+}
+
+@keyframes float-gentle {
+  0%, 100% { transform: translateY(0px); }
+  50% { transform: translateY(-12px); }
+}
+
+.animate-float {
+  animation: float-gentle 4s ease-in-out infinite;
+}
+
+@keyframes ripple-wave {
+  0% { transform: scale(1); opacity: 0.6; }
+  100% { transform: scale(3); opacity: 0; }
+}
+
+.ripple-circle {
+  @apply absolute border-2 border-blue-400/30 rounded-full;
+  animation: ripple-wave 3s cubic-bezier(0.23, 1, 0.32, 1) infinite;
+}
+
+::-webkit-scrollbar {
+  width: 8px;
+}
+::-webkit-scrollbar-track {
+  @apply bg-transparent;
+}
+::-webkit-scrollbar-thumb {
+  @apply bg-slate-200 rounded-full border-4 border-transparent bg-clip-content;
+}

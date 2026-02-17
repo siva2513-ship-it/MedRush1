@@ -1,3 +1,4 @@
+
 /** @type {import('tailwindcss').Config} */
 export default {
   content: [
@@ -44,11 +45,28 @@ export default {
       },
       animation: {
         'float': 'float 3s ease-in-out infinite',
+        'scan': 'scan 2s linear infinite',
+        'pulse-bg': 'pulse-bg 4s ease-in-out infinite',
+        'ripple': 'ripple 2.5s cubic-bezier(0.23, 1, 0.32, 1) infinite',
       },
       keyframes: {
         float: {
           '0%, 100%': { transform: 'translateY(0px)' },
           '50%': { transform: 'translateY(-10px)' },
+        },
+        scan: {
+          '0%': { top: '0%', opacity: '0' },
+          '10%': { opacity: '1' },
+          '90%': { opacity: '1' },
+          '100%': { top: '100%', opacity: '0' },
+        },
+        'pulse-bg': {
+          '0%, 100%': { backgroundColor: 'rgba(14, 165, 233, 0.05)' },
+          '50%': { backgroundColor: 'rgba(14, 165, 233, 0.15)' },
+        },
+        ripple: {
+          '0%': { transform: 'scale(1)', opacity: '0.8' },
+          '100%': { transform: 'scale(2.5)', opacity: '0' },
         }
       }
     }

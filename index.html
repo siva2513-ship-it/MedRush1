@@ -1,125 +1,11 @@
-
 <!DOCTYPE html>
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>MedRush - AI Smart Medicine Reminder</title>
-    <script src="https://cdn.tailwindcss.com"></script>
+    <title>MedRush | AI-Powered Smart Medication Manager</title>
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
-    <script>
-      tailwind.config = {
-        theme: {
-          extend: {
-            fontFamily: {
-              sans: ['"Plus Jakarta Sans"', 'sans-serif'],
-            },
-            colors: {
-              medical: {
-                50: '#f0f9ff',
-                100: '#e0f2fe',
-                200: '#bae6fd',
-                500: '#0ea5e9',
-                600: '#0284c7',
-                700: '#0369a1',
-                900: '#0c4a6e',
-              },
-              morning: {
-                light: '#fffbeb',
-                accent: '#f59e0b',
-                text: '#92400e',
-              },
-              afternoon: {
-                light: '#f0f9ff',
-                accent: '#0ea5e9',
-                text: '#075985',
-              },
-              evening: {
-                light: '#f5f3ff',
-                accent: '#8b5cf6',
-                text: '#5b21b6',
-              }
-            },
-            boxShadow: {
-              'medical-sm': '0 2px 8px -2px rgba(0, 0, 0, 0.05), 0 1px 4px -1px rgba(0, 0, 0, 0.02)',
-              'medical-lg': '0 20px 25px -5px rgba(0, 0, 0, 0.05), 0 8px 10px -6px rgba(0, 0, 0, 0.02)',
-            }
-          }
-        }
-      }
-    </script>
-    <style>
-      body {
-        background-color: #f8fafc;
-        -webkit-tap-highlight-color: transparent;
-      }
-      .medical-gradient {
-        background: radial-gradient(circle at top right, #f0fdf4, transparent),
-                    radial-gradient(circle at bottom left, #eff6ff, transparent);
-        background-color: #f8fafc;
-      }
-      @keyframes float {
-        0% { transform: translateY(0px); }
-        50% { transform: translateY(-10px); }
-        100% { transform: translateY(0px); }
-      }
-      .animate-float {
-        animation: float 3s ease-in-out infinite;
-      }
-      
-      /* Scanning Beam Animation */
-      @keyframes scan {
-        0% { top: 0%; opacity: 0; }
-        10% { opacity: 1; }
-        90% { opacity: 1; }
-        100% { top: 100%; opacity: 0; }
-      }
-      .scanner-beam {
-        position: absolute;
-        width: 100%;
-        height: 4px;
-        background: linear-gradient(to right, transparent, #0ea5e9, transparent);
-        box-shadow: 0 0 15px 5px rgba(14, 165, 233, 0.5);
-        z-index: 20;
-        animation: scan 2s linear infinite;
-      }
-
-      /* Deep Call Pulse Background */
-      @keyframes call-bg-pulse {
-        0% { background-position: 0% 50%; background-size: 100% 100%; }
-        50% { background-position: 100% 50%; background-size: 150% 150%; }
-        100% { background-position: 0% 50%; background-size: 100% 100%; }
-      }
-      .animate-call-bg {
-        background: radial-gradient(circle at center, #0c4a6e, #020617);
-        animation: call-bg-pulse 10s ease infinite;
-      }
-
-      /* Ripple Effect for Calling */
-      @keyframes ripple {
-        0% { transform: scale(1); opacity: 0.8; }
-        100% { transform: scale(2.5); opacity: 0; }
-      }
-      .call-ripple {
-        position: absolute;
-        border: 2px solid rgba(14, 165, 233, 0.3);
-        border-radius: 50%;
-        animation: ripple 2.5s cubic-bezier(0.23, 1, 0.32, 1) infinite;
-      }
-      .call-ripple:nth-child(2) { animation-delay: 0.8s; }
-      .call-ripple:nth-child(3) { animation-delay: 1.6s; }
-
-      ::-webkit-scrollbar {
-        width: 6px;
-      }
-      ::-webkit-scrollbar-track {
-        background: transparent;
-      }
-      ::-webkit-scrollbar-thumb {
-        background: #e2e8f0;
-        border-radius: 10px;
-      }
-    </style>
+    <script src="https://cdn.tailwindcss.com"></script>
   <script type="importmap">
 {
   "imports": {
@@ -132,7 +18,7 @@
 }
 </script>
 </head>
-  <body>
+  <body class="bg-slate-50 font-sans antialiased text-slate-900 overflow-x-hidden">
     <div id="root"></div>
     <script type="module" src="/index.tsx"></script>
   </body>

@@ -1,6 +1,6 @@
 {
   "name": "MedRush",
-  "description": "A multilingual AI-powered smart medicine reminder web application for patients, caretakers, and nurses, featuring prescription scanning and interactive AI voice assistance.",
+  "description": "Clean, modular AI Smart Medicine Reminder optimized for production. Features prescription scanning and interactive voice assistance.",
   "requestFramePermissions": [
     "camera",
     "microphone"
