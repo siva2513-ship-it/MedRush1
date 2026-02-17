@@ -69,6 +69,7 @@ const App: React.FC = () => {
         : `Hello ${user?.name || 'Patient'}. This is your MedRush AI assistant. I have processed your prescription details.`;
         
       await generateAiVoice(`${intro} ${summary}. Please check the app for your full schedule. Get well soon!`, () => {
+        // Wait a few seconds after voice ends before closing call automatically
         setTimeout(() => setCallState('idle'), 3000);
       });
     }
@@ -277,47 +278,108 @@ const App: React.FC = () => {
     if (callState === 'idle') return null;
 
     return (
-      <div className="fixed inset-0 z-[100] bg-gray-900 flex flex-col items-center justify-between py-24 text-white overflow-hidden transition-all duration-500">
-        <div className="absolute inset-0 opacity-10 pointer-events-none">
-          <div className="w-full h-full bg-gradient-to-b from-medical-500 to-transparent animate-pulse"></div>
+      <div className="fixed inset-0 z-[100] animate-call-bg flex flex-col items-center justify-between py-24 text-white overflow-hidden transition-all duration-700">
+        
+        {/* Dynamic Ripple Background for Incoming/Active */}
+        <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+          <div className="call-ripple w-64 h-64"></div>
+          <div className="call-ripple w-64 h-64"></div>
+          <div className="call-ripple w-64 h-64"></div>
         </div>
 
-        <div className="relative z-10 flex flex-col items-center">
-          <div className={`w-32 h-32 rounded-full bg-medical-600 flex items-center justify-center text-4xl font-bold shadow-2xl border-4 border-white/20 ${callState === 'incoming' ? 'animate-bounce' : 'animate-float'}`}>
-             <svg className="w-16 h-16 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <div className="relative z-10 flex flex-col items-center text-center px-6">
+          <div className={`relative w-40 h-40 rounded-full bg-medical-600 flex items-center justify-center shadow-[0_0_80px_rgba(14,165,233,0.4)] border-4 border-white/20 transition-transform duration-500 ${callState === 'incoming' ? 'animate-bounce' : 'animate-float scale-110'}`}>
+             <svg className="w-20 h-20 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M16 8l2-2m0 0l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
              </svg>
+             {/* Tiny pulsing dot when active */}
+             {callState === 'active' && (
+               <div className="absolute top-2 right-2 w-6 h-6 bg-emerald-500 border-4 border-medical-600 rounded-full animate-ping"></div>
+             )}
           </div>
-          <h2 className="mt-8 text-3xl font-black tracking-tight">MedRush AI</h2>
-          <p className="mt-2 text-medical-400 font-bold uppercase tracking-widest text-sm">
-            {callState === 'incoming' ? 'Incoming Test Call...' : `In Conversation • ${formatDuration(callDuration)}`}
-          </p>
+
+          <h2 className="mt-10 text-4xl font-black tracking-tight drop-shadow-md">MedRush AI Assistance</h2>
+          
+          {callState === 'active' && (
+            <div className="mt-6 flex flex-col items-center">
+              <div className="text-6xl font-mono font-black tracking-tighter text-medical-400 drop-shadow-[0_0_15px_rgba(14,165,233,0.5)]">
+                {formatDuration(callDuration)}
+              </div>
+              <p className="mt-2 text-white/40 font-black uppercase tracking-[0.4em] text-[10px]">Secure Voice Line</p>
+            </div>
+          )}
+
+          {callState === 'incoming' && (
+            <div className="mt-6 flex flex-col items-center space-y-2">
+               <p className="text-medical-400 font-black uppercase tracking-widest text-sm animate-pulse">
+                Analyzing your health needs...
+               </p>
+               <div className="flex space-x-1">
+                 {[1, 2, 3].map(i => <div key={i} className="w-1.5 h-1.5 bg-white/20 rounded-full animate-bounce" style={{ animationDelay: `${i * 0.2}s` }}></div>)}
+               </div>
+            </div>
+          )}
         </div>
 
         {callState === 'active' && (
-          <div className="flex flex-col items-center space-y-6">
-            <div className="flex space-x-2 items-center h-16">
-               {[...Array(8)].map((_, i) => (
-                 <div key={i} className="w-2 bg-medical-500 rounded-full animate-[pulse_1.5s_infinite]" style={{ height: `${Math.random() * 40 + 20}px`, animationDelay: `${i * 0.1}s` }}></div>
+          <div className="flex flex-col items-center space-y-8 w-full px-12 max-w-lg">
+            {/* Visualizer bars */}
+            <div className="flex space-x-2 items-end h-24">
+               {[...Array(15)].map((_, i) => (
+                 <div 
+                  key={i} 
+                  className="w-2 bg-medical-500 rounded-full transition-all duration-300 animate-[pulse_1s_infinite]" 
+                  style={{ 
+                    height: `${Math.random() * 80 + 20}%`, 
+                    animationDelay: `${i * 0.05}s`,
+                    opacity: 0.6 + (Math.random() * 0.4)
+                  }}
+                 ></div>
                ))}
             </div>
-            <p className="text-white/60 text-xs font-black uppercase tracking-[0.3em]">AI Assistant Speaking</p>
+            <div className="bg-white/5 backdrop-blur-xl p-8 rounded-[40px] border border-white/10 w-full text-center shadow-2xl">
+               <p className="text-base font-medium text-white/80 italic leading-relaxed">
+                 "I am currently summarizing your medicine schedule. Please listen carefully to the instructions."
+               </p>
+            </div>
           </div>
         )}
 
         <div className="relative z-10 w-full px-12 max-w-sm flex justify-around">
           {callState === 'incoming' ? (
             <>
-              <button onClick={declineCall} className="w-20 h-20 bg-red-500 rounded-full flex items-center justify-center shadow-2xl shadow-red-500/40 transform hover:scale-110 active:scale-90 transition-all">
-                <svg className="w-8 h-8 rotate-[135deg]" fill="currentColor" viewBox="0 0 20 20"><path d="M2 3a1 1 0 011-1h2.153a1 1 0 01.986.836l.74 4.435a1 1 0 01-.54 1.06l-1.548.773a11.037 11.037 0 005.505 5.505l.774-1.548a1 1 0 011.059-.54l4.435.74a1 1 0 01.836.986V17a1 1 0 01-1 1h-2C7.82 18 2 12.18 2 5V3z" /></svg>
-              </button>
-              <button onClick={answerCall} className="w-20 h-20 bg-green-500 rounded-full flex items-center justify-center shadow-2xl shadow-green-500/40 transform hover:scale-110 active:scale-90 transition-all animate-[pulse_1s_infinite]">
-                <svg className="w-8 h-8" fill="currentColor" viewBox="0 0 20 20"><path d="M2 3a1 1 0 011-1h2.153a1 1 0 01.986.836l.74 4.435a1 1 0 01-.54 1.06l-1.548.773a11.037 11.037 0 005.505 5.505l.774-1.548a1 1 0 011.059-.54l4.435.74a1 1 0 01.836.986V17a1 1 0 01-1 1h-2C7.82 18 2 12.18 2 5V3z" /></svg>
-              </button>
+              <div className="flex flex-col items-center space-y-4">
+                <button 
+                  onClick={declineCall} 
+                  className="w-22 h-22 bg-red-500 rounded-full flex items-center justify-center shadow-[0_0_40px_rgba(239,68,68,0.4)] transform hover:scale-110 active:scale-90 transition-all group"
+                >
+                  <svg className="w-10 h-10 rotate-[135deg] text-white" fill="currentColor" viewBox="0 0 20 20">
+                    <path d="M2 3a1 1 0 011-1h2.153a1 1 0 01.986.836l.74 4.435a1 1 0 01-.54 1.06l-1.548.773a11.037 11.037 0 005.505 5.505l.774-1.548a1 1 0 011.059-.54l4.435.74a1 1 0 01.836.986V17a1 1 0 01-1 1h-2C7.82 18 2 12.18 2 5V3z" />
+                  </svg>
+                </button>
+                <span className="text-[11px] font-black uppercase tracking-[0.2em] opacity-50">Dismiss</span>
+              </div>
+              <div className="flex flex-col items-center space-y-4">
+                <button 
+                  onClick={answerCall} 
+                  className="w-22 h-22 bg-green-500 rounded-full flex items-center justify-center shadow-[0_0_40px_rgba(34,197,94,0.4)] transform hover:scale-110 active:scale-90 transition-all animate-[pulse_1.2s_infinite]"
+                >
+                  <svg className="w-10 h-10 text-white" fill="currentColor" viewBox="0 0 20 20">
+                    <path d="M2 3a1 1 0 011-1h2.153a1 1 0 01.986.836l.74 4.435a1 1 0 01-.54 1.06l-1.548.773a11.037 11.037 0 005.505 5.505l.774-1.548a1 1 0 011.059-.54l4.435.74a1 1 0 01.836.986V17a1 1 0 01-1 1h-2C7.82 18 2 12.18 2 5V3z" />
+                  </svg>
+                </button>
+                <span className="text-[11px] font-black uppercase tracking-[0.2em] opacity-50">Answer</span>
+              </div>
             </>
           ) : (
-            <button onClick={declineCall} className="w-24 h-24 bg-red-600 rounded-full flex items-center justify-center shadow-2xl shadow-red-600/40 transform hover:scale-105 active:scale-90 transition-all">
-               <span className="font-black text-xs uppercase tracking-widest">End Call</span>
+            <button 
+              onClick={declineCall} 
+              className="w-full py-8 bg-red-600/90 hover:bg-red-600 rounded-[32px] flex flex-col items-center justify-center shadow-3xl shadow-red-600/20 transform hover:scale-105 active:scale-95 transition-all group"
+            >
+               <svg className="w-10 h-10 rotate-[135deg] mb-2 text-white group-hover:rotate-[150deg] transition-transform" fill="currentColor" viewBox="0 0 20 20">
+                 <path d="M2 3a1 1 0 011-1h2.153a1 1 0 01.986.836l.74 4.435a1 1 0 01-.54 1.06l-1.548.773a11.037 11.037 0 005.505 5.505l.774-1.548a1 1 0 011.059-.54l4.435.74a1 1 0 01.836.986V17a1 1 0 01-1 1h-2C7.82 18 2 12.18 2 5V3z" />
+               </svg>
+               <span className="font-black text-xs uppercase tracking-[0.4em]">Close Call</span>
             </button>
           )}
         </div>
@@ -350,9 +412,54 @@ const App: React.FC = () => {
             </button>
           </div>
         )}
-        {step === 'language' && renderLanguageSelection()}
-        {step === 'role' && renderRoleSelection()}
-        {step === 'login' && renderLogin()}
+        {step === 'language' && (
+          <div className="flex flex-col items-center justify-center min-h-[70vh] p-6">
+            <h2 className="text-3xl font-black mb-10 tracking-tight text-center">{t.chooseLanguage}</h2>
+            <div className="grid grid-cols-1 gap-4 w-full max-w-sm">
+              {[
+                { label: 'English', val: Language.ENGLISH },
+                { label: 'తెలుగు (Telugu)', val: Language.TELUGU },
+                { label: 'हिन्दी (Hindi)', val: Language.HINDI }
+              ].map(lang => (
+                <button key={lang.val} onClick={() => { setLanguage(lang.val); setStep('role'); }} className="p-6 rounded-[28px] border-2 bg-white text-xl font-black shadow-sm hover:border-medical-500 transition-all text-left">
+                  {lang.label}
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
+        {step === 'role' && (
+          <div className="flex flex-col items-center justify-center min-h-[70vh] p-6">
+            <h2 className="text-3xl font-black mb-10 tracking-tight text-center">{t.whoAreYou}</h2>
+            <div className="grid grid-cols-1 gap-4 w-full max-w-sm">
+              {[
+                { label: t.patient, role: Role.PATIENT, icon: '👤' },
+                { label: t.caretaker, role: Role.CARETAKER, icon: '👨‍👩‍👧' },
+                { label: t.nurse, role: Role.NURSE, icon: '🏥' }
+              ].map(r => (
+                <button key={r.role} onClick={() => { setRole(r.role); setStep('login'); }} className="p-6 rounded-[28px] border-2 bg-white flex items-center space-x-6 hover:border-medical-500 transition-all text-left">
+                  <span className="text-4xl">{r.icon}</span>
+                  <span className="text-xl font-black">{r.label}</span>
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
+        {step === 'login' && (
+          <div className="flex flex-col items-center justify-center min-h-[70vh] p-6">
+            <div className="w-full max-w-sm bg-white p-10 rounded-[40px] shadow-medical-lg border border-gray-100">
+              <h2 className="text-3xl font-black text-gray-900 mb-8 tracking-tighter">{t.login}</h2>
+              <form onSubmit={handleLogin} className="space-y-5">
+                <input required type="text" value={formData.name} onChange={e => setFormData({...formData, name: e.target.value})} placeholder="Full Name" className="w-full p-5 rounded-2xl bg-gray-50 border-2 border-transparent focus:border-medical-500 focus:bg-white transition-all outline-none font-bold" />
+                <input required type="tel" value={formData.phone} onChange={e => setFormData({...formData, phone: e.target.value})} placeholder="Phone Number" className="w-full p-5 rounded-2xl bg-gray-50 border-2 border-transparent focus:border-medical-500 focus:bg-white transition-all outline-none font-bold" />
+                <input required type="text" maxLength={6} value={otp} onChange={e => setOtp(e.target.value)} placeholder="OTP: 123456" className="w-full p-5 rounded-2xl bg-gray-50 border-2 border-transparent focus:border-medical-500 focus:bg-white transition-all outline-none font-black text-center text-3xl tracking-widest" />
+                <button type="submit" className="w-full py-5 bg-medical-600 text-white rounded-[28px] font-black shadow-xl shadow-medical-500/20 hover:bg-medical-700 transition-all mt-4 text-lg">
+                  {t.verify}
+                </button>
+              </form>
+            </div>
+          </div>
+        )}
         {step === 'dashboard' && role === Role.PATIENT && renderPatientDashboard()}
         {step === 'settings' && (
           <div className="p-8 flex flex-col space-y-4 max-w-sm mx-auto">
@@ -379,63 +486,6 @@ const App: React.FC = () => {
       )}
     </div>
   );
-
-  function renderLanguageSelection() {
-    return (
-      <div className="flex flex-col items-center justify-center min-h-[70vh] p-6">
-        <h2 className="text-3xl font-black mb-10 tracking-tight text-center">{t.chooseLanguage}</h2>
-        <div className="grid grid-cols-1 gap-4 w-full max-w-sm">
-          {[
-            { label: 'English', val: Language.ENGLISH },
-            { label: 'తెలుగు (Telugu)', val: Language.TELUGU },
-            { label: 'हिन्दी (Hindi)', val: Language.HINDI }
-          ].map(lang => (
-            <button key={lang.val} onClick={() => { setLanguage(lang.val); setStep('role'); }} className="p-6 rounded-[28px] border-2 bg-white text-xl font-black shadow-sm hover:border-medical-500 transition-all text-left">
-              {lang.label}
-            </button>
-          ))}
-        </div>
-      </div>
-    );
-  }
-
-  function renderRoleSelection() {
-    return (
-      <div className="flex flex-col items-center justify-center min-h-[70vh] p-6">
-        <h2 className="text-3xl font-black mb-10 tracking-tight text-center">{t.whoAreYou}</h2>
-        <div className="grid grid-cols-1 gap-4 w-full max-w-sm">
-          {[
-            { label: t.patient, role: Role.PATIENT, icon: '👤' },
-            { label: t.caretaker, role: Role.CARETAKER, icon: '👨‍👩‍👧' },
-            { label: t.nurse, role: Role.NURSE, icon: '🏥' }
-          ].map(r => (
-            <button key={r.role} onClick={() => { setRole(r.role); setStep('login'); }} className="p-6 rounded-[28px] border-2 bg-white flex items-center space-x-6 hover:border-medical-500 transition-all text-left">
-              <span className="text-4xl">{r.icon}</span>
-              <span className="text-xl font-black">{r.label}</span>
-            </button>
-          ))}
-        </div>
-      </div>
-    );
-  }
-
-  function renderLogin() {
-    return (
-      <div className="flex flex-col items-center justify-center min-h-[70vh] p-6">
-        <div className="w-full max-w-sm bg-white p-10 rounded-[40px] shadow-medical-lg border border-gray-100">
-          <h2 className="text-3xl font-black text-gray-900 mb-8 tracking-tighter">{t.login}</h2>
-          <form onSubmit={handleLogin} className="space-y-5">
-            <input required type="text" value={formData.name} onChange={e => setFormData({...formData, name: e.target.value})} placeholder="Full Name" className="w-full p-5 rounded-2xl bg-gray-50 border-2 border-transparent focus:border-medical-500 focus:bg-white transition-all outline-none font-bold" />
-            <input required type="tel" value={formData.phone} onChange={e => setFormData({...formData, phone: e.target.value})} placeholder="Phone Number" className="w-full p-5 rounded-2xl bg-gray-50 border-2 border-transparent focus:border-medical-500 focus:bg-white transition-all outline-none font-bold" />
-            <input required type="text" maxLength={6} value={otp} onChange={e => setOtp(e.target.value)} placeholder="OTP: 123456" className="w-full p-5 rounded-2xl bg-gray-50 border-2 border-transparent focus:border-medical-500 focus:bg-white transition-all outline-none font-black text-center text-3xl tracking-widest" />
-            <button type="submit" className="w-full py-5 bg-medical-600 text-white rounded-[28px] font-black shadow-xl shadow-medical-500/20 hover:bg-medical-700 transition-all mt-4 text-lg">
-              {t.verify}
-            </button>
-          </form>
-        </div>
-      </div>
-    );
-  }
 };
 
 export default App;
