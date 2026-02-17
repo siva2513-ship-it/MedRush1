@@ -62,8 +62,14 @@ const App: React.FC = () => {
     setCallState('active');
     // Start AI Voice using Gemini TTS
     if (summary) {
-      await generateAiVoice(`Hello ${user?.name || 'Patient'}. This is your MedRush AI assistant. I have processed your prescription. ${summary}. Please ensure you take your medications on time as shown in the app. Have a healthy day!`, () => {
-        setTimeout(() => setCallState('idle'), 2000);
+      const intro = language === Language.TELUGU 
+        ? `నమస్కారం ${user?.name || 'రోగి'}. నేను మెడ్రష్ AI అసిస్టెంట్ ని. మీ ప్రిస్క్రిప్షన్ వివరాలు విశ్లేషించాను.`
+        : language === Language.HINDI
+        ? `नमस्ते ${user?.name || 'मरीज'}. मैं आपकी मेडरश AI सहायक हूँ। मैंने आपके नुस्खे का विश्लेषण कर लिया है।`
+        : `Hello ${user?.name || 'Patient'}. This is your MedRush AI assistant. I have processed your prescription details.`;
+        
+      await generateAiVoice(`${intro} ${summary}. Please check the app for your full schedule. Get well soon!`, () => {
+        setTimeout(() => setCallState('idle'), 3000);
       });
     }
   };
@@ -88,8 +94,8 @@ const App: React.FC = () => {
         const result = await analyzePrescription(base64, language);
         setMedicines(result.medicines);
         setSummary(result.summary);
-        // Automatically trigger test call after 1.5 seconds of successful analysis
-        setTimeout(() => initiateTestCall(), 1500);
+        // Automatically trigger test call after successful analysis
+        setTimeout(() => initiateTestCall(), 1200);
       } catch (err) {
         alert("Failed to analyze prescription. Please ensure the photo is clear and try again.");
       } finally {
@@ -169,9 +175,6 @@ const App: React.FC = () => {
     return (
       <div className="max-w-2xl mx-auto p-4 space-y-8 pb-32">
         <div className="bg-white p-8 rounded-[32px] shadow-medical-lg border border-gray-100 overflow-hidden relative group">
-          <div className="absolute top-0 right-0 p-4 opacity-5 pointer-events-none transition-transform group-hover:scale-110">
-             <svg className="w-24 h-24" fill="currentColor" viewBox="0 0 24 24"><path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-2 10h-4v4h-2v-4H7v-2h4V7h2v4h4v2z"/></svg>
-          </div>
           <h2 className="text-2xl font-extrabold text-gray-900 mb-6">{t.uploadPrescription}</h2>
           
           <div className="relative group/input rounded-3xl overflow-hidden border-2 border-dashed border-medical-100 bg-gray-50/30 min-h-[240px] flex items-center justify-center transition-all duration-500 hover:border-medical-500">
@@ -207,7 +210,7 @@ const App: React.FC = () => {
             {loading && (
               <div className="relative z-20 flex flex-col items-center space-y-4">
                  <div className="w-16 h-16 border-4 border-medical-500 border-t-transparent rounded-full animate-spin"></div>
-                 <span className="text-medical-700 font-black uppercase tracking-[0.2em] text-xs">Analyzing Prescription...</span>
+                 <span className="text-medical-700 font-black uppercase tracking-[0.2em] text-xs">Analyzing...</span>
               </div>
             )}
 
@@ -221,136 +224,51 @@ const App: React.FC = () => {
 
         {summary && (
           <div className="bg-white p-8 rounded-[32px] shadow-medical-lg border-2 border-emerald-500/10 space-y-6">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center space-x-3">
-                <div className="w-10 h-10 bg-emerald-500 text-white rounded-2xl flex items-center justify-center shadow-lg shadow-emerald-500/20">
-                  <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 24 24"><path d="M14 2H6c-1.1 0-1.99.9-1.99 2L4 20c0 1.1.89 2 1.99 2H18c1.1 0 2-.9 2-2V8l-6-6zm2 16H8v-2h8v2zm0-4H8v-2h8v2zm-3-5V3.5L18.5 9H13z"/></svg>
-                </div>
-                <h3 className="text-gray-900 font-extrabold text-xl">{t.summaryTitle}</h3>
-              </div>
-            </div>
-            
+            <h3 className="text-gray-900 font-extrabold text-xl">{t.summaryTitle}</h3>
             <div className="bg-emerald-50/30 p-6 rounded-2xl border border-emerald-50">
                <p className="text-emerald-900 text-lg font-medium leading-relaxed italic">"{summary}"</p>
             </div>
-
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-2">
               <button 
                 onClick={() => speakText(summary, language)}
                 className="flex items-center justify-center space-x-3 py-5 bg-emerald-600 text-white rounded-2xl font-extrabold shadow-lg shadow-emerald-600/20 hover:bg-emerald-700 active:scale-95 transition-all"
               >
-                <span className="text-xl">🔊</span>
-                <span>{t.readAloud}</span>
+                <span>🔊 Read Aloud</span>
               </button>
               <button 
                 onClick={() => initiateTestCall()}
                 className="flex items-center justify-center space-x-3 py-5 bg-medical-600 text-white rounded-2xl font-extrabold shadow-lg shadow-medical-600/20 hover:bg-medical-700 active:scale-95 transition-all"
               >
-                <span className="text-xl">📞</span>
-                <span>{t.callReminder}</span>
+                <span>📞 Test AI Call</span>
               </button>
             </div>
           </div>
         )}
 
-        {medicines.length > 0 && (
-          <div className="space-y-10">
-            {/* Morning Section */}
-            <div className="space-y-4">
-              <div className="flex items-center justify-between pl-2">
-                <div className="flex items-center space-x-3">
-                  <div className="w-10 h-10 bg-morning-accent text-white rounded-2xl flex items-center justify-center shadow-lg shadow-morning-accent/20">
-                    <span className="text-xl">☀️</span>
-                  </div>
-                  <div>
-                    <h3 className="text-sm font-black text-gray-400 uppercase tracking-widest leading-none mb-1">{t.morning}</h3>
-                    <p className="text-lg font-extrabold text-gray-800">Fresh Start</p>
-                  </div>
+        <div className="space-y-10">
+          {[
+            { title: t.morning, icon: '☀️', meds: morningMeds, theme: 'morning' as const },
+            { title: t.afternoon, icon: '🌤️', meds: afternoonMeds, theme: 'afternoon' as const },
+            { title: t.evening, icon: '🌙', meds: eveningMeds, theme: 'evening' as const },
+            { title: t.others, icon: '📅', meds: otherMeds, theme: 'default' as const }
+          ].map((section, sidx) => section.meds.length > 0 && (
+            <div key={sidx} className="space-y-4">
+              <div className="flex items-center space-x-3">
+                <div className={`w-10 h-10 rounded-2xl flex items-center justify-center shadow-lg ${
+                  section.theme === 'morning' ? 'bg-morning-accent text-white shadow-morning-accent/20' :
+                  section.theme === 'afternoon' ? 'bg-afternoon-accent text-white shadow-afternoon-accent/20' :
+                  section.theme === 'evening' ? 'bg-evening-accent text-white shadow-evening-accent/20' : 'bg-gray-500 text-white shadow-gray-500/20'
+                }`}>
+                  <span className="text-xl">{section.icon}</span>
                 </div>
-                <span className="px-3 py-1 bg-morning-light text-morning-accent text-[10px] font-black rounded-full uppercase">{morningMeds.length} Items</span>
+                <h3 className="text-lg font-extrabold text-gray-800">{section.title}</h3>
               </div>
               <div className="space-y-3">
-                {morningMeds.length > 0 ? (
-                  morningMeds.map((med, idx) => renderMedicineItem(med, idx, 'morning'))
-                ) : (
-                  <div className="bg-gray-50/50 border border-dashed border-gray-100 p-8 rounded-3xl text-center">
-                    <p className="text-sm text-gray-400 font-bold italic">No medicines scheduled for morning</p>
-                  </div>
-                )}
+                {section.meds.map((med, midx) => renderMedicineItem(med, midx, section.theme))}
               </div>
             </div>
-
-            {/* Afternoon Section */}
-            <div className="space-y-4">
-              <div className="flex items-center justify-between pl-2">
-                <div className="flex items-center space-x-3">
-                  <div className="w-10 h-10 bg-afternoon-accent text-white rounded-2xl flex items-center justify-center shadow-lg shadow-afternoon-accent/20">
-                    <span className="text-xl">🌤️</span>
-                  </div>
-                  <div>
-                    <h3 className="text-sm font-black text-gray-400 uppercase tracking-widest leading-none mb-1">{t.afternoon}</h3>
-                    <p className="text-lg font-extrabold text-gray-800">Mid-Day Care</p>
-                  </div>
-                </div>
-                <span className="px-3 py-1 bg-afternoon-light text-afternoon-accent text-[10px] font-black rounded-full uppercase">{afternoonMeds.length} Items</span>
-              </div>
-              <div className="space-y-3">
-                {afternoonMeds.length > 0 ? (
-                  afternoonMeds.map((med, idx) => renderMedicineItem(med, idx, 'afternoon'))
-                ) : (
-                  <div className="bg-gray-50/50 border border-dashed border-gray-100 p-8 rounded-3xl text-center">
-                    <p className="text-sm text-gray-400 font-bold italic">No medicines scheduled for afternoon</p>
-                  </div>
-                )}
-              </div>
-            </div>
-
-            {/* Evening Section */}
-            <div className="space-y-4">
-              <div className="flex items-center justify-between pl-2">
-                <div className="flex items-center space-x-3">
-                  <div className="w-10 h-10 bg-evening-accent text-white rounded-2xl flex items-center justify-center shadow-lg shadow-evening-accent/20">
-                    <span className="text-xl">🌙</span>
-                  </div>
-                  <div>
-                    <h3 className="text-sm font-black text-gray-400 uppercase tracking-widest leading-none mb-1">{t.evening}</h3>
-                    <p className="text-lg font-extrabold text-gray-800">Night Routine</p>
-                  </div>
-                </div>
-                <span className="px-3 py-1 bg-evening-light text-evening-accent text-[10px] font-black rounded-full uppercase">{eveningMeds.length} Items</span>
-              </div>
-              <div className="space-y-3">
-                {eveningMeds.length > 0 ? (
-                  eveningMeds.map((med, idx) => renderMedicineItem(med, idx, 'evening'))
-                ) : (
-                  <div className="bg-gray-50/50 border border-dashed border-gray-100 p-8 rounded-3xl text-center">
-                    <p className="text-sm text-gray-400 font-bold italic">No medicines scheduled for evening</p>
-                  </div>
-                )}
-              </div>
-            </div>
-
-            {/* Others Section */}
-            {otherMeds.length > 0 && (
-              <div className="space-y-4">
-                <div className="flex items-center justify-between pl-2">
-                  <div className="flex items-center space-x-3">
-                    <div className="w-10 h-10 bg-gray-500 text-white rounded-2xl flex items-center justify-center shadow-lg shadow-gray-500/20">
-                      <span className="text-xl">📅</span>
-                    </div>
-                    <div>
-                      <h3 className="text-sm font-black text-gray-400 uppercase tracking-widest leading-none mb-1">{t.others}</h3>
-                      <p className="text-lg font-extrabold text-gray-800">Additional</p>
-                    </div>
-                  </div>
-                </div>
-                <div className="space-y-3">
-                  {otherMeds.map((med, idx) => renderMedicineItem(med, idx))}
-                </div>
-              </div>
-            )}
-          </div>
-        )}
+          ))}
+        </div>
       </div>
     );
   };
@@ -360,62 +278,46 @@ const App: React.FC = () => {
 
     return (
       <div className="fixed inset-0 z-[100] bg-gray-900 flex flex-col items-center justify-between py-24 text-white overflow-hidden transition-all duration-500">
-        {/* Background Animation */}
         <div className="absolute inset-0 opacity-10 pointer-events-none">
           <div className="w-full h-full bg-gradient-to-b from-medical-500 to-transparent animate-pulse"></div>
         </div>
 
         <div className="relative z-10 flex flex-col items-center">
-          <div className={`w-32 h-32 rounded-full bg-medical-600 flex items-center justify-center text-4xl font-bold shadow-2xl border-4 border-white/10 ${callState === 'incoming' ? 'animate-bounce' : 'animate-float'}`}>
-            <svg className="w-16 h-16 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
-            </svg>
+          <div className={`w-32 h-32 rounded-full bg-medical-600 flex items-center justify-center text-4xl font-bold shadow-2xl border-4 border-white/20 ${callState === 'incoming' ? 'animate-bounce' : 'animate-float'}`}>
+             <svg className="w-16 h-16 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M16 8l2-2m0 0l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
+             </svg>
           </div>
-          <h2 className="mt-8 text-3xl font-black tracking-tight">MedRush AI Assistant</h2>
+          <h2 className="mt-8 text-3xl font-black tracking-tight">MedRush AI</h2>
           <p className="mt-2 text-medical-400 font-bold uppercase tracking-widest text-sm">
-            {callState === 'incoming' ? 'Incoming Call...' : `Call in progress • ${formatDuration(callDuration)}`}
+            {callState === 'incoming' ? 'Incoming Test Call...' : `In Conversation • ${formatDuration(callDuration)}`}
           </p>
         </div>
 
         {callState === 'active' && (
-          <div className="flex flex-col items-center space-y-4">
-            <div className="flex space-x-2">
-               {[...Array(5)].map((_, i) => (
-                 <div key={i} className="w-2 bg-medical-500 rounded-full animate-pulse" style={{ height: `${Math.random() * 40 + 10}px`, animationDelay: `${i * 0.1}s` }}></div>
+          <div className="flex flex-col items-center space-y-6">
+            <div className="flex space-x-2 items-center h-16">
+               {[...Array(8)].map((_, i) => (
+                 <div key={i} className="w-2 bg-medical-500 rounded-full animate-[pulse_1.5s_infinite]" style={{ height: `${Math.random() * 40 + 20}px`, animationDelay: `${i * 0.1}s` }}></div>
                ))}
             </div>
-            <p className="text-white/60 text-xs font-bold uppercase tracking-widest">AI is explaining your prescription</p>
+            <p className="text-white/60 text-xs font-black uppercase tracking-[0.3em]">AI Assistant Speaking</p>
           </div>
         )}
 
         <div className="relative z-10 w-full px-12 max-w-sm flex justify-around">
           {callState === 'incoming' ? (
             <>
-              <button 
-                onClick={declineCall}
-                className="w-20 h-20 bg-red-500 rounded-full flex items-center justify-center shadow-xl shadow-red-500/30 hover:scale-110 active:scale-90 transition-transform"
-              >
-                <svg className="w-8 h-8 rotate-[135deg]" fill="currentColor" viewBox="0 0 20 20">
-                  <path d="M2 3a1 1 0 011-1h2.153a1 1 0 01.986.836l.74 4.435a1 1 0 01-.54 1.06l-1.548.773a11.037 11.037 0 005.505 5.505l.774-1.548a1 1 0 011.059-.54l4.435.74a1 1 0 01.836.986V17a1 1 0 01-1 1h-2C7.82 18 2 12.18 2 5V3z" />
-                </svg>
+              <button onClick={declineCall} className="w-20 h-20 bg-red-500 rounded-full flex items-center justify-center shadow-2xl shadow-red-500/40 transform hover:scale-110 active:scale-90 transition-all">
+                <svg className="w-8 h-8 rotate-[135deg]" fill="currentColor" viewBox="0 0 20 20"><path d="M2 3a1 1 0 011-1h2.153a1 1 0 01.986.836l.74 4.435a1 1 0 01-.54 1.06l-1.548.773a11.037 11.037 0 005.505 5.505l.774-1.548a1 1 0 011.059-.54l4.435.74a1 1 0 01.836.986V17a1 1 0 01-1 1h-2C7.82 18 2 12.18 2 5V3z" /></svg>
               </button>
-              <button 
-                onClick={answerCall}
-                className="w-20 h-20 bg-green-500 rounded-full flex items-center justify-center shadow-xl shadow-green-500/30 hover:scale-110 active:scale-90 transition-transform animate-[pulse_1s_infinite]"
-              >
-                <svg className="w-8 h-8" fill="currentColor" viewBox="0 0 20 20">
-                  <path d="M2 3a1 1 0 011-1h2.153a1 1 0 01.986.836l.74 4.435a1 1 0 01-.54 1.06l-1.548.773a11.037 11.037 0 005.505 5.505l.774-1.548a1 1 0 011.059-.54l4.435.74a1 1 0 01.836.986V17a1 1 0 01-1 1h-2C7.82 18 2 12.18 2 5V3z" />
-                </svg>
+              <button onClick={answerCall} className="w-20 h-20 bg-green-500 rounded-full flex items-center justify-center shadow-2xl shadow-green-500/40 transform hover:scale-110 active:scale-90 transition-all animate-[pulse_1s_infinite]">
+                <svg className="w-8 h-8" fill="currentColor" viewBox="0 0 20 20"><path d="M2 3a1 1 0 011-1h2.153a1 1 0 01.986.836l.74 4.435a1 1 0 01-.54 1.06l-1.548.773a11.037 11.037 0 005.505 5.505l.774-1.548a1 1 0 011.059-.54l4.435.74a1 1 0 01.836.986V17a1 1 0 01-1 1h-2C7.82 18 2 12.18 2 5V3z" /></svg>
               </button>
             </>
           ) : (
-            <button 
-              onClick={declineCall}
-              className="w-20 h-20 bg-red-500 rounded-full flex items-center justify-center shadow-xl shadow-red-500/30 hover:scale-110 active:scale-90 transition-transform"
-            >
-              <svg className="w-8 h-8 rotate-[135deg]" fill="currentColor" viewBox="0 0 20 20">
-                <path d="M2 3a1 1 0 011-1h2.153a1 1 0 01.986.836l.74 4.435a1 1 0 01-.54 1.06l-1.548.773a11.037 11.037 0 005.505 5.505l.774-1.548a1 1 0 011.059-.54l4.435.74a1 1 0 01.836.986V17a1 1 0 01-1 1h-2C7.82 18 2 12.18 2 5V3z" />
-              </svg>
+            <button onClick={declineCall} className="w-24 h-24 bg-red-600 rounded-full flex items-center justify-center shadow-2xl shadow-red-600/40 transform hover:scale-105 active:scale-90 transition-all">
+               <span className="font-black text-xs uppercase tracking-widest">End Call</span>
             </button>
           )}
         </div>
@@ -423,153 +325,40 @@ const App: React.FC = () => {
     );
   };
 
-  const renderOnboarding = () => (
-    <div className="flex flex-col items-center justify-center min-h-screen p-6 text-center">
-      <Logo />
-      <p className="mt-6 text-gray-500 font-medium max-w-xs leading-relaxed">AI-powered healthcare companion for your family’s well-being.</p>
-      <button 
-        onClick={() => setStep('language')}
-        className="mt-16 px-12 py-5 bg-medical-600 text-white rounded-3xl font-extrabold shadow-2xl shadow-medical-600/30 hover:bg-medical-700 transition-all transform hover:scale-105 active:scale-95 text-lg"
-      >
-        {t.startCare}
-      </button>
-    </div>
-  );
-
-  const renderLanguageSelection = (isSettings = false) => (
-    <div className={`flex flex-col items-center justify-center ${isSettings ? '' : 'min-h-screen'} p-6`}>
-      <h2 className="text-3xl font-black text-gray-900 mb-10 tracking-tight text-center">{t.chooseLanguage}</h2>
-      <div className="grid grid-cols-1 gap-5 w-full max-w-sm">
-        {[
-          { label: 'English', val: Language.ENGLISH, desc: 'Global support' },
-          { label: 'తెలుగు (Telugu)', val: Language.TELUGU, desc: 'ప్రాంతీయ మద్దతు' },
-          { label: 'हिन्दी (Hindi)', val: Language.HINDI, desc: 'स्थानीय समर्थन' }
-        ].map(lang => (
-          <button
-            key={lang.val}
-            onClick={() => { 
-              setLanguage(lang.val); 
-              if (!isSettings) setStep('role'); 
-            }}
-            className={`p-6 rounded-[28px] border-2 transition-all duration-300 flex justify-between items-center ${
-              language === lang.val 
-              ? 'border-medical-500 bg-medical-50 text-medical-700 shadow-xl shadow-medical-500/10' 
-              : 'border-gray-100 bg-white text-gray-700 hover:border-medical-200'
-            }`}
-          >
-            <div className="text-left">
-              <span className="text-xl font-extrabold block">{lang.label}</span>
-              <span className="text-[11px] font-bold uppercase tracking-widest opacity-50">{lang.desc}</span>
-            </div>
-            <div className={`w-8 h-8 rounded-full border-4 flex items-center justify-center transition-all ${language === lang.val ? 'bg-medical-500 border-medical-500 shadow-lg shadow-medical-500/30' : 'border-gray-200'}`}>
-               {language === lang.val && <svg className="w-4 h-4 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={4} d="M5 13l4 4L19 7" /></svg>}
-            </div>
-          </button>
-        ))}
-      </div>
-    </div>
-  );
-
-  const renderRoleSelection = () => (
-    <div className="flex flex-col items-center justify-center min-h-screen p-6">
-      <h2 className="text-3xl font-black text-gray-900 mb-10 tracking-tight text-center">{t.whoAreYou}</h2>
-      <div className="grid grid-cols-1 gap-5 w-full max-w-sm">
-        {[
-          { label: t.patient, role: Role.PATIENT, icon: '👤', desc: 'Manage your medications' },
-          { label: t.caretaker, role: Role.CARETAKER, icon: '👨‍👩‍👧', desc: 'Track family prescriptions' },
-          { label: t.nurse, role: Role.NURSE, icon: '🏥', desc: 'Professional patient monitoring' }
-        ].map(r => (
-          <button
-            key={r.role}
-            onClick={() => { setRole(r.role); setStep('login'); }}
-            className="p-6 rounded-[28px] border-2 border-gray-100 bg-white flex items-center space-x-5 hover:border-medical-400 hover:shadow-xl hover:shadow-medical-500/5 transition-all text-left group"
-          >
-            <div className="text-4xl p-4 bg-gray-50 rounded-3xl group-hover:bg-medical-50 group-hover:scale-110 transition-all duration-500">{r.icon}</div>
-            <div>
-              <span className="text-xl font-extrabold text-gray-900 block leading-none mb-1">{r.label}</span>
-              <span className="text-xs font-medium text-gray-400">{r.desc}</span>
-            </div>
-          </button>
-        ))}
-      </div>
-    </div>
-  );
-
-  const renderLogin = () => (
-    <div className="flex flex-col items-center justify-center min-h-screen p-6">
-      <div className="w-full max-w-sm bg-white p-10 rounded-[40px] shadow-medical-lg border border-gray-100">
-        <h2 className="text-3xl font-black text-gray-900 mb-2 tracking-tighter">{t.login}</h2>
-        <p className="text-medical-600 font-black uppercase text-[10px] tracking-widest mb-10 bg-medical-50 inline-block px-3 py-1 rounded-full">{role}</p>
-        
-        <form onSubmit={handleLogin} className="space-y-6">
-          <input 
-            required 
-            type="text" 
-            value={formData.name}
-            onChange={e => setFormData({...formData, name: e.target.value})}
-            placeholder="Name" 
-            className="w-full p-5 rounded-2xl bg-gray-50 border-2 border-transparent focus:border-medical-500 focus:bg-white transition-all outline-none font-bold" 
-          />
-          <input 
-            required 
-            type="tel" 
-            value={formData.phone}
-            onChange={e => setFormData({...formData, phone: e.target.value})}
-            placeholder="Phone Number" 
-            className="w-full p-5 rounded-2xl bg-gray-50 border-2 border-transparent focus:border-medical-500 focus:bg-white transition-all outline-none font-bold" 
-          />
-          <input 
-            required 
-            type="text" 
-            maxLength={6}
-            value={otp}
-            onChange={e => setOtp(e.target.value)}
-            placeholder="OTP: 123456" 
-            className="w-full p-5 rounded-2xl bg-gray-50 border-2 border-transparent focus:border-medical-500 focus:bg-white transition-all outline-none font-black text-center text-3xl tracking-[0.5em]" 
-          />
-          <button type="submit" className="w-full py-5 bg-medical-600 text-white rounded-[28px] font-black shadow-xl shadow-medical-500/20 hover:bg-medical-700 active:scale-95 transition-all mt-4 text-lg">
-            {t.verify}
-          </button>
-        </form>
-      </div>
-    </div>
-  );
-
   return (
-    <div className="min-h-screen medical-gradient text-gray-900 overflow-x-hidden font-sans">
-      <header className="sticky top-0 z-50 bg-white/70 backdrop-blur-2xl border-b border-gray-100 px-6 py-5 flex items-center justify-between shadow-sm">
-        <button 
-          onClick={() => step !== 'onboarding' && setStep('dashboard')}
-          className="flex items-center space-x-3 transition-transform active:scale-95"
-        >
-          <div className="w-10 h-10 bg-medical-600 rounded-2xl flex items-center justify-center shadow-xl shadow-medical-500/30 transform -rotate-3">
-            <svg className="w-6 h-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M13 10V3L4 14h7v7l9-11h-7z" />
-            </svg>
+    <div className="min-h-screen medical-gradient text-gray-900 font-sans overflow-x-hidden">
+      <header className="sticky top-0 z-50 bg-white/80 backdrop-blur-xl border-b border-gray-100 px-6 py-5 flex items-center justify-between shadow-sm">
+        <button onClick={() => setStep('dashboard')} className="flex items-center space-x-3 transition-transform active:scale-95">
+          <div className="w-10 h-10 bg-medical-600 rounded-2xl flex items-center justify-center shadow-xl shadow-medical-500/20 transform -rotate-3">
+            <svg className="w-6 h-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M13 10V3L4 14h7v7l9-11h-7z" /></svg>
           </div>
           <span className="text-2xl font-black tracking-tighter text-gray-900">{t.appName}</span>
         </button>
         {user && (
-          <div className="flex items-center space-x-4">
-             <button 
-               onClick={() => setStep('settings')}
-               className="w-12 h-12 bg-white rounded-[18px] flex items-center justify-center border-2 border-gray-50 shadow-medical-sm overflow-hidden group hover:border-medical-200 transition-all"
-             >
-                <span className="text-sm font-black text-medical-600 group-hover:scale-110 transition-transform uppercase">{user.name.substring(0, 2)}</span>
-             </button>
-          </div>
+          <button onClick={() => setStep('settings')} className="w-11 h-11 bg-white rounded-2xl flex items-center justify-center border-2 border-gray-50 shadow-sm font-black text-medical-600">
+            {user.name.charAt(0)}
+          </button>
         )}
       </header>
 
-      <main className="pt-6 pb-20 max-w-4xl mx-auto">
-        {step === 'onboarding' && renderOnboarding()}
+      <main className="pt-4 pb-32 max-w-4xl mx-auto">
+        {step === 'onboarding' && (
+          <div className="flex flex-col items-center justify-center min-h-[80vh] p-6 text-center">
+            <Logo />
+            <button onClick={() => setStep('language')} className="mt-16 px-12 py-5 bg-medical-600 text-white rounded-[32px] font-black shadow-2xl shadow-medical-600/20 hover:scale-105 transition-all text-lg">
+              {t.startCare}
+            </button>
+          </div>
+        )}
         {step === 'language' && renderLanguageSelection()}
         {step === 'role' && renderRoleSelection()}
         {step === 'login' && renderLogin()}
         {step === 'dashboard' && role === Role.PATIENT && renderPatientDashboard()}
         {step === 'settings' && (
-          <div className="p-8 text-center">
-            <button onClick={handleLogout} className="px-8 py-4 bg-red-100 text-red-600 font-black rounded-2xl">Logout Session</button>
+          <div className="p-8 flex flex-col space-y-4 max-w-sm mx-auto">
+             <h2 className="text-2xl font-black mb-4">Settings</h2>
+             <button onClick={() => setStep('language')} className="p-5 bg-white rounded-3xl border-2 text-left font-bold shadow-sm">Change Language</button>
+             <button onClick={handleLogout} className="p-5 bg-red-50 text-red-600 rounded-3xl border-2 border-red-100 font-black shadow-sm">Logout Session</button>
           </div>
         )}
       </main>
@@ -577,34 +366,76 @@ const App: React.FC = () => {
       {renderCallOverlay()}
 
       {user && (
-        <nav className="fixed bottom-0 left-0 w-full px-6 pb-8 pt-0 pointer-events-none z-50">
-           <div className="max-w-md mx-auto bg-gray-900/90 backdrop-blur-xl border border-white/10 p-3 flex justify-around items-center rounded-[32px] pointer-events-auto shadow-2xl">
-              <button 
-                onClick={() => setStep('dashboard')}
-                className={`flex flex-col items-center space-y-1.5 py-2 px-8 rounded-2xl transition-all ${step === 'dashboard' ? 'bg-medical-500 text-white shadow-xl shadow-medical-500/20 scale-105' : 'text-gray-500 hover:text-gray-300'}`}
-              >
-                <svg className="w-6 h-6" fill={step === 'dashboard' ? 'currentColor' : 'none'} viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
-                </svg>
-                <span className="text-[9px] font-black uppercase tracking-widest">Home</span>
+        <nav className="fixed bottom-0 left-0 w-full px-6 pb-8 z-50 pointer-events-none">
+           <div className="max-w-md mx-auto bg-gray-900/90 backdrop-blur-2xl p-2 flex justify-around items-center rounded-[32px] pointer-events-auto shadow-2xl border border-white/10">
+              <button onClick={() => setStep('dashboard')} className={`flex-1 flex flex-col items-center py-3 rounded-2xl transition-all ${step === 'dashboard' ? 'bg-medical-500 text-white' : 'text-gray-500'}`}>
+                <span className="text-[10px] font-black uppercase tracking-widest">Home</span>
               </button>
-              
-              <div className="w-px h-6 bg-white/10"></div>
-
-              <button 
-                onClick={() => setStep('settings')}
-                className={`flex flex-col items-center space-y-1.5 py-2 px-8 rounded-2xl transition-all ${step === 'settings' ? 'bg-medical-500 text-white shadow-xl shadow-medical-500/20 scale-105' : 'text-gray-500 hover:text-gray-300'}`}
-              >
-                <svg className="w-6 h-6" fill={step === 'settings' ? 'currentColor' : 'none'} viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                </svg>
-                <span className="text-[9px] font-black uppercase tracking-widest">Settings</span>
+              <button onClick={() => setStep('settings')} className={`flex-1 flex flex-col items-center py-3 rounded-2xl transition-all ${step === 'settings' ? 'bg-medical-500 text-white' : 'text-gray-500'}`}>
+                <span className="text-[10px] font-black uppercase tracking-widest">Settings</span>
               </button>
            </div>
         </nav>
       )}
     </div>
   );
+
+  function renderLanguageSelection() {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-[70vh] p-6">
+        <h2 className="text-3xl font-black mb-10 tracking-tight text-center">{t.chooseLanguage}</h2>
+        <div className="grid grid-cols-1 gap-4 w-full max-w-sm">
+          {[
+            { label: 'English', val: Language.ENGLISH },
+            { label: 'తెలుగు (Telugu)', val: Language.TELUGU },
+            { label: 'हिन्दी (Hindi)', val: Language.HINDI }
+          ].map(lang => (
+            <button key={lang.val} onClick={() => { setLanguage(lang.val); setStep('role'); }} className="p-6 rounded-[28px] border-2 bg-white text-xl font-black shadow-sm hover:border-medical-500 transition-all text-left">
+              {lang.label}
+            </button>
+          ))}
+        </div>
+      </div>
+    );
+  }
+
+  function renderRoleSelection() {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-[70vh] p-6">
+        <h2 className="text-3xl font-black mb-10 tracking-tight text-center">{t.whoAreYou}</h2>
+        <div className="grid grid-cols-1 gap-4 w-full max-w-sm">
+          {[
+            { label: t.patient, role: Role.PATIENT, icon: '👤' },
+            { label: t.caretaker, role: Role.CARETAKER, icon: '👨‍👩‍👧' },
+            { label: t.nurse, role: Role.NURSE, icon: '🏥' }
+          ].map(r => (
+            <button key={r.role} onClick={() => { setRole(r.role); setStep('login'); }} className="p-6 rounded-[28px] border-2 bg-white flex items-center space-x-6 hover:border-medical-500 transition-all text-left">
+              <span className="text-4xl">{r.icon}</span>
+              <span className="text-xl font-black">{r.label}</span>
+            </button>
+          ))}
+        </div>
+      </div>
+    );
+  }
+
+  function renderLogin() {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-[70vh] p-6">
+        <div className="w-full max-w-sm bg-white p-10 rounded-[40px] shadow-medical-lg border border-gray-100">
+          <h2 className="text-3xl font-black text-gray-900 mb-8 tracking-tighter">{t.login}</h2>
+          <form onSubmit={handleLogin} className="space-y-5">
+            <input required type="text" value={formData.name} onChange={e => setFormData({...formData, name: e.target.value})} placeholder="Full Name" className="w-full p-5 rounded-2xl bg-gray-50 border-2 border-transparent focus:border-medical-500 focus:bg-white transition-all outline-none font-bold" />
+            <input required type="tel" value={formData.phone} onChange={e => setFormData({...formData, phone: e.target.value})} placeholder="Phone Number" className="w-full p-5 rounded-2xl bg-gray-50 border-2 border-transparent focus:border-medical-500 focus:bg-white transition-all outline-none font-bold" />
+            <input required type="text" maxLength={6} value={otp} onChange={e => setOtp(e.target.value)} placeholder="OTP: 123456" className="w-full p-5 rounded-2xl bg-gray-50 border-2 border-transparent focus:border-medical-500 focus:bg-white transition-all outline-none font-black text-center text-3xl tracking-widest" />
+            <button type="submit" className="w-full py-5 bg-medical-600 text-white rounded-[28px] font-black shadow-xl shadow-medical-500/20 hover:bg-medical-700 transition-all mt-4 text-lg">
+              {t.verify}
+            </button>
+          </form>
+        </div>
+      </div>
+    );
+  }
 };
 
 export default App;
