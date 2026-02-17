@@ -35,7 +35,7 @@ async function decodeAudioData(
 
 // Analyze prescription using Gemini 3 Pro
 export const analyzePrescription = async (base64Image: string, language: string): Promise<{ medicines: Medicine[], summary: string }> => {
-  const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+  const ai = new GoogleGenAI({ apiKey: import.meta.env.VITE_GOOGLE_API_KEY });
   
   const prompt = `You are a Medical Prescription Specialist. Your task is to extract medicine data from the provided image with 100% accuracy.
   
